@@ -1,0 +1,37 @@
+<!-- 
+  FSWebServer - Example Index Page
+  Copyright (c) 2015 Hristo Gochkov. All rights reserved.
+  This file is part of the ESP8266WebServer library for Arduino environment.
+ 
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+  <title>BevoThings</title>
+  <script type="text/javascript" src="graphs.js"></script>
+  <script type="text/javascript"> src="app.js"</script>
+</head>
+<body id="index" style="margin:0; padding:0;" onload="onBodyLoad()">
+  <div id="controls" style="display: block; border: 1px solid rgb(68, 68, 68); padding: 5px; margin: 5px; width: 362px; background-color: rgb(238, 238, 238);">
+    <label>Period (ms):</label>
+    <input type="number" id="refresh-rate"/>
+    <input type="button" id="start-button" value="Start"/>
+    <input type="button" id="stop-button" value="Stop"/>
+    <input type="button" id="led-29" value="Room 1"/>
+    <input type="button" id="led-31" value="Room 2"/>
+  </div>
+  <div id="distance"></div>
+</body>
+</html>

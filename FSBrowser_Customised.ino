@@ -17,8 +17,8 @@
 
 #define DBG_OUTPUT_PORT Serial
 
-const char* ssid = "SEUN 6228";
-const char* password = "Gorill@r94";
+const char* ssid = "ssid";
+const char* password = "pass";
 const char* host = "esp8266fs";
 
 /*  Additional code

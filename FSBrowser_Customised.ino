@@ -17,14 +17,14 @@
 
 #define DBG_OUTPUT_PORT Serial
 
-const char* ssid = "ssid";
-const char* password = "pass";
+const char* ssid = "SEUN 6228";
+const char* password = "Gorill@r94";
 const char* host = "esp8266fs";
 
 /*  Additional code
 
 */
-#define TOKEN "token"
+#define TOKEN "jN80oNCqadNp1tvMQJcf"
 #define DEBUG 0
 #define GPIO0_PIN 29
 #define GPIO2_PIN 31
@@ -41,8 +41,7 @@ String statusTopic="";
 
 boolean gpioState[] = {false, false};
 String distanceJson = "{distance:100}";
-boolean getGpioStatus = false;
-boolean getDistanceData = false;
+int distance = 100;  ///DDEBUGGING
 /*
   End of additional code
 */
@@ -51,6 +50,15 @@ ESP8266WebServer server(80);
 //holds the current upload
 File fsUploadFile;
 
+
+/*  Telemetry data
+
+*/
+
+//telemetryData["distance"] = distance;
+//telemetryData["29"] = gpioState[0];
+//telemetryData["31"] = (bool)false;
+ 
 //format bytes
 String formatBytes(size_t bytes){
   if (bytes < 1024){
@@ -175,13 +183,28 @@ void handleFileList() {
  void handleControlGpio(){
     if(server.args() == 0) return server.send(500, "text/plain", "Bad Request");
     String pinName = server.argName(0);
+    Serial.println(pinName);
     int pin = pinName.toInt();
     String pinValue =server.arg(pinName);
+    Serial.println(pinValue);
     int enable = pinValue.toInt();
     set_gpio_status(pin,enable);
     server.send(200,"text/plain","OK");
  }
 
+ void  sendTelemetry(){
+    StaticJsonBuffer<200> telemetryBuffer;
+    JsonObject& telemetryData = telemetryBuffer.createObject();
+    String telemetryString;
+    telemetryData["29"] = gpioState[0]? true : false;
+    telemetryData["31"] = gpioState[1]? true : false;
+    telemetryData["distance"] = distance;
+    telemetryData.printTo(telemetryString);
+    Serial.println(telemetryString);
+    server.send(200, "text/json", telemetryString); //for testing
+ }
+
+ 
 void setup(void){
   DBG_OUTPUT_PORT.begin(115200);
   DBG_OUTPUT_PORT.print("\n");
@@ -244,17 +267,9 @@ void setup(void){
   
   server.on("/gpio", HTTP_POST,handleControlGpio);
   
-  //get gpio status value read from TM4C
-  server.on("/gpio", HTTP_GET, [](){
-      getGpioStatus = true;
-      get_gpio_status();
-  });
-
-    //get distance value read from TM4C
-  server.on("/distance", HTTP_GET, [](){
-    getDistanceData=true;
-    server.send(200, "text/json", distanceJson); //for testing
-  });
+  //get telemetry value read from TM4C
+  server.on("/telemetry", HTTP_GET, sendTelemetry);
+  
   server.begin();
   DBG_OUTPUT_PORT.println("HTTP server started");
 
@@ -310,21 +325,14 @@ void SerialEvaluate(String inputString){
 
     //for sending status to server
     if (strcmp("-s",command) == 0){
-        distanceJson = output;  //save output 
-        if (getDistanceData){
-            server.send(200,"text/json",distanceJson);
-            getDistanceData = false;
-        }      
+       getDistance(output);     
        client.publish("v1/devices/me/attributes",output.c_str());  
      }   
     if (strcmp("-g",command) == 0){
 //       char buf[32]
 //       topic.toCharArray(buf,32);
 //       Serial.print(statusTopic);
-       if (getGpioStatus){
-          server.send(200,"text/json",output);
-          getGpioStatus=false;
-        }
+       getLED(output);
        publishToTopic(statusTopic,output);
     }  
 }
@@ -388,10 +396,8 @@ String get_gpio_status() {
      //String strPayload = "";
      //Serial.print("-s \r");
 //  Serial.println(strPayload);
-  if (getGpioStatus){
-     server.send(200,"text/json",strPayload);
-     getGpioStatus = false;
-  }
+
+  getLED(strPayload);
   return strPayload;
 }
 
@@ -435,5 +441,25 @@ void reconnect() {
       // Wait 5 seconds before retrying
       delay(5000);
     }
+  }
+}
+
+void getDistance(String distanceJson){
+  StaticJsonBuffer<200> jsonBuffer;
+  JsonObject& distanceData = jsonBuffer.parseObject(distanceJson);
+  if (distanceData.success())
+  {
+    distance = distanceData["distance"].as<int>();
+    return;
+  }
+}
+void getLED(String ledJson){
+  StaticJsonBuffer<200> jsonBuffer;
+  JsonObject& ledData = jsonBuffer.parseObject(ledJson);
+  Serial.println("In get led");
+  if (ledData.success()){
+    gpioState[0] = ledData["29"].as<bool>();
+    gpioState[1] = ledData["31"].as<bool>();
+    return;
   }
 }

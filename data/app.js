@@ -38,7 +38,7 @@ function setButtonAppearance(id,value){
   if (id == "led-29"){
     (Boolean(value))? button.style.backgroundColor = "red":button.style.backgroundColor = "gray";
   } else if (id == "led-31"){
-    (Boolean(value))? button.style.backgroundColor = "blue":button.style.backgroundColor = "gray"; 
+    (Boolean(value))? button.style.backgroundColor = "green":button.style.backgroundColor = "gray"; 
   } else {
     console.log("Can't find LED button");
   }

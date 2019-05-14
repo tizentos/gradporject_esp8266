@@ -49,7 +49,7 @@ int distance = 100;  ///DDEBUGGING
 
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer httpUpdater;
-
+char ip[16];
  
 //format bytes
 String formatBytes(size_t bytes){
@@ -108,6 +108,7 @@ bool handleFileRead(String path){
     int enable = pinValue.toInt();
     set_gpio_status(pin,enable);
     server.send(200,"text/plain","OK");
+    get_gpio_status();
  }
 
  void  sendTelemetry(){
@@ -180,7 +181,7 @@ void setup(void){
   client.setCallback(on_message);
 
   delay(1000);
-  char ip[16];
+
   WiFi.localIP().toString().toCharArray(ip,16);
   DBG_OUTPUT_PORT.printf("-d %s \r",ip);
 
@@ -198,6 +199,7 @@ void loop(void){
 //    Serial.println("problem here");
   }
   client.loop();
+//  Serial.printf("-d %s \r",ip);
 }
 
 
@@ -227,8 +229,9 @@ void SerialEvaluate(String inputString){
     //for controlling ESP8266 LED
     if (strcmp("-l",command) == 0){
         int state = output.toInt();
-        Serial.printf("-d %s\r","ACK");   //respond data received
-        digitalWrite(ledPin,state);
+//        Serial.printf("-d %s\r","ACK");   //respond data received
+//        digitalWrite(ledPin,state);
+          ESP.restart();
     }
 
     //for sending status to server
@@ -335,6 +338,7 @@ void reconnect() {
         get_gpio_status();
     }
   }
+ Serial.printf("-d %s \r",ip);
 }
 
 void getDistance(String distanceJson){

@@ -10,6 +10,7 @@
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
+#include <ESP8266HTTPUpdateServer.h>
 #include <FS.h>
 
 #include <ArduinoJson.h>
@@ -47,17 +48,8 @@ int distance = 100;  ///DDEBUGGING
 */
 
 ESP8266WebServer server(80);
-//holds the current upload
-File fsUploadFile;
+ESP8266HTTPUpdateServer httpUpdater;
 
-
-/*  Telemetry data
-
-*/
-
-//telemetryData["distance"] = distance;
-//telemetryData["29"] = gpioState[0];
-//telemetryData["31"] = (bool)false;
  
 //format bytes
 String formatBytes(size_t bytes){
@@ -105,88 +97,14 @@ bool handleFileRead(String path){
   return false;
 }
 
-void handleFileUpload(){
-  if(server.uri() != "/edit") return;
-  HTTPUpload& upload = server.upload();
-  if(upload.status == UPLOAD_FILE_START){
-    String filename = upload.filename;
-    if(!filename.startsWith("/")) filename = "/"+filename;
-    DBG_OUTPUT_PORT.print("handleFileUpload Name: "); DBG_OUTPUT_PORT.println(filename);
-    fsUploadFile = SPIFFS.open(filename, "w");
-    filename = String();
-  } else if(upload.status == UPLOAD_FILE_WRITE){
-    //DBG_OUTPUT_PORT.print("handleFileUpload Data: "); DBG_OUTPUT_PORT.println(upload.currentSize);
-    if(fsUploadFile)
-      fsUploadFile.write(upload.buf, upload.currentSize);
-  } else if(upload.status == UPLOAD_FILE_END){
-    if(fsUploadFile)
-      fsUploadFile.close();
-    DBG_OUTPUT_PORT.print("handleFileUpload Size: "); DBG_OUTPUT_PORT.println(upload.totalSize);
-  }
-}
-
-void handleFileDelete(){
-  if(server.args() == 0) return server.send(500, "text/plain", "BAD ARGS");
-  String path = server.arg(0);
-  DBG_OUTPUT_PORT.println("handleFileDelete: " + path);
-  if(path == "/")
-    return server.send(500, "text/plain", "BAD PATH");
-  if(!SPIFFS.exists(path))
-    return server.send(404, "text/plain", "FileNotFound");
-  SPIFFS.remove(path);
-  server.send(200, "text/plain", "");
-  path = String();
-}
-
-void handleFileCreate(){
-  if(server.args() == 0)
-    return server.send(500, "text/plain", "BAD ARGS");
-  String path = server.arg(0);
-  DBG_OUTPUT_PORT.println("handleFileCreate: " + path);
-  if(path == "/")
-    return server.send(500, "text/plain", "BAD PATH");
-  if(SPIFFS.exists(path))
-    return server.send(500, "text/plain", "FILE EXISTS");
-  File file = SPIFFS.open(path, "w");
-  if(file)
-    file.close();
-  else
-    return server.send(500, "text/plain", "CREATE FAILED");
-  server.send(200, "text/plain", "");
-  path = String();
-}
-
-void handleFileList() {
-  if(!server.hasArg("dir")) {server.send(500, "text/plain", "BAD ARGS"); return;}
-  
-  String path = server.arg("dir");
-  DBG_OUTPUT_PORT.println("handleFileList: " + path);
-  Dir dir = SPIFFS.openDir(path);
-  path = String();
-
-  String output = "[";
-  while(dir.next()){
-    File entry = dir.openFile("r");
-    if (output != "[") output += ',';
-    bool isDir = false;
-    output += "{\"type\":\"";
-    output += (isDir)?"dir":"file";
-    output += "\",\"name\":\"";
-    output += String(entry.name()).substring(1);
-    output += "\"}"; 
-    entry.close();
-  }
-  output += "]";
-  server.send(200, "text/json", output);
- }
 
  void handleControlGpio(){
     if(server.args() == 0) return server.send(500, "text/plain", "Bad Request");
     String pinName = server.argName(0);
-    Serial.println(pinName);
+//    Serial.println(pinName);
     int pin = pinName.toInt();
     String pinValue =server.arg(pinName);
-    Serial.println(pinValue);
+//    Serial.println(pinValue);
     int enable = pinValue.toInt();
     set_gpio_status(pin,enable);
     server.send(200,"text/plain","OK");
@@ -200,63 +118,46 @@ void handleFileList() {
     telemetryData["31"] = gpioState[1]? true : false;
     telemetryData["distance"] = distance;
     telemetryData.printTo(telemetryString);
-    Serial.println(telemetryString);
+//    Serial.println(telemetryString);
     server.send(200, "text/json", telemetryString); //for testing
  }
 
  
 void setup(void){
   DBG_OUTPUT_PORT.begin(115200);
-  DBG_OUTPUT_PORT.print("\n");
-  DBG_OUTPUT_PORT.setDebugOutput(true);
+//  DBG_OUTPUT_PORT.print("\n");
+//  DBG_OUTPUT_PORT.setDebugOutput(true);
   SPIFFS.begin();
   {
     Dir dir = SPIFFS.openDir("/");
     while (dir.next()) {    
       String fileName = dir.fileName();
       size_t fileSize = dir.fileSize();
-      DBG_OUTPUT_PORT.printf("FS File: %s, size: %s\n", fileName.c_str(), formatBytes(fileSize).c_str());
+//      DBG_OUTPUT_PORT.printf("FS File: %s, size: %s\n", fileName.c_str(), formatBytes(fileSize).c_str());
     }
-    DBG_OUTPUT_PORT.printf("\n");
+//    DBG_OUTPUT_PORT.printf("\n");
   }
   
 
   //WIFI INIT
-  DBG_OUTPUT_PORT.printf("Connecting to %s\n", ssid);
+//  DBG_OUTPUT_PORT.printf("Connecting to %s\n", ssid);
   if (String(WiFi.SSID()) != String(ssid)) {
-    WiFi.mode(WIFI_STA);
+    WiFi.mode(WIFI_AP_STA);
     WiFi.begin(ssid, password);
   }
   
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    DBG_OUTPUT_PORT.print(".");
+//    DBG_OUTPUT_PORT.print(".");
   }
-  DBG_OUTPUT_PORT.println("");
-  DBG_OUTPUT_PORT.print("Connected! IP address: ");
-  DBG_OUTPUT_PORT.println(WiFi.localIP());
+//  DBG_OUTPUT_PORT.println("");
+//  DBG_OUTPUT_PORT.print("Connected! IP address: ");
+//  DBG_OUTPUT_PORT.print("-d "); 
+//  DBG_OUTPUT_PORT.print(WiFi.localIP());
 
-  MDNS.begin(host);
-  DBG_OUTPUT_PORT.print("Open http://");
-  DBG_OUTPUT_PORT.print(host);
-  DBG_OUTPUT_PORT.println(".local/edit to see the file browser");
-  
-  
+
+ 
   //SERVER INIT
-  //list directory
-  server.on("/list", HTTP_GET, handleFileList);
-  //load editor
-  server.on("/edit", HTTP_GET, [](){
-    if(!handleFileRead("/edit.htm")) server.send(404, "text/plain", "FileNotFound");
-  });
-  //create file
-  server.on("/edit", HTTP_PUT, handleFileCreate);
-  //delete file
-  server.on("/edit", HTTP_DELETE, handleFileDelete);
-  //first callback is called after the request has ended with all parsed arguments
-  //second callback handles file uploads at that location
-  server.on("/edit", HTTP_POST, [](){ server.send(200, "text/plain", ""); }, handleFileUpload);
-
   //called when the url is not defined here
   //use it to load content from SPIFFS
   server.onNotFound([](){
@@ -269,19 +170,26 @@ void setup(void){
   
   //get telemetry value read from TM4C
   server.on("/telemetry", HTTP_GET, sendTelemetry);
-  
+
+
+  httpUpdater.setup(&server);
   server.begin();
-  DBG_OUTPUT_PORT.println("HTTP server started");
+//  DBG_OUTPUT_PORT.println("HTTP server started");
 
   client.setServer( thingsboardServer, 1883 );
   client.setCallback(on_message);
 
-  DBG_OUTPUT_PORT.println("MQTT Client started");
+  delay(1000);
+  char ip[16];
+  WiFi.localIP().toString().toCharArray(ip,16);
+  DBG_OUTPUT_PORT.printf("-d %s \r",ip);
+
+//  DBG_OUTPUT_PORT.println("MQTT Client started");
 }
  
 void loop(void){
+  
   server.handleClient();
-
   if (Serial.available()){
     serialEvent();
   }
@@ -327,6 +235,7 @@ void SerialEvaluate(String inputString){
     if (strcmp("-s",command) == 0){
        getDistance(output);     
        client.publish("v1/devices/me/attributes",output.c_str());  
+       client.publish("v1/devices/me/telemetry",output.c_str());  
      }   
     if (strcmp("-g",command) == 0){
 //       char buf[32]
@@ -341,7 +250,8 @@ void SerialEvaluate(String inputString){
 //helper method to publish to any topic
 void publishToTopic(String top,String payload){
       client.publish(top.c_str(),payload.c_str());
-      client.publish("v1/devices/me/attributes",payload.c_str());     
+      client.publish("v1/devices/me/attributes",payload.c_str()); 
+      client.publish("v1/devices/me/telemetry",payload.c_str());    
  }
 void on_message(const char* topic, byte* payload, unsigned int length) {
   char json[length + 1];
@@ -378,26 +288,26 @@ void on_message(const char* topic, byte* payload, unsigned int length) {
     get_gpio_status();
 
     //for testing,comment later
-    client.publish(responseTopic.c_str(), get_gpio_status().c_str());
-    client.publish("v1/devices/me/attributes", get_gpio_status().c_str());
+//    client.publish(responseTopic.c_str(), get_gpio_status().c_str());
+//    client.publish("v1/devices/me/attributes", get_gpio_status().c_str());
   }
 }
 
 String get_gpio_status() {
   // Prepare gpios JSON payload string
-  StaticJsonBuffer<200> jsonBuffer;
-  JsonObject& data = jsonBuffer.createObject();
-  data[String(GPIO0_PIN)] = gpioState[0] ? true : false;
-  data[String(GPIO2_PIN)] = gpioState[1] ? true : false;
-  char payload[256];
-  data.printTo(payload, sizeof(payload));
-  String strPayload = String(payload);
+//  StaticJsonBuffer<200> jsonBuffer;
+//  JsonObject& data = jsonBuffer.createObject();
+//  data[String(GPIO0_PIN)] = gpioState[0] ? true : false;
+//  data[String(GPIO2_PIN)] = gpioState[1] ? true : false;
+//  char payload[256];
+//  data.printTo(payload, sizeof(payload));
+//  String strPayload = String(payload);
 //  getGpio = true;
-     //String strPayload = "";
-     //Serial.print("-s \r");
+     String strPayload = "";
+     Serial.print("-s \r");
 //  Serial.println(strPayload);
 
-  getLED(strPayload);
+//  getLED(strPayload);
   return strPayload;
 }
 
@@ -416,30 +326,13 @@ void set_gpio_status(int pin, boolean enabled) {
 }
 
 void reconnect() {
-  // Loop until we're reconnected
-  while (!client.connected()) {
-    status = WiFi.status();
-    if ( status != WL_CONNECTED) {
-      WiFi.mode(WIFI_STA);
-      WiFi.begin(ssid, password);
-      while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-      }
-      Serial.printf("-d Connected in Station mode \r");
-    }
+  // Non-blocking reconnecting
+  if (!client.connected()) {
 //    Serial.print("-d Connecting to ThingsBoard");
     // Attempt to connect (clientId, username, password)
     if ( client.connect("TM4C123", TOKEN, NULL) ) {
-//      Serial.println( "-d [DONE]" );
-      // Subscribing to receive RPC requests
       client.subscribe("v1/devices/me/rpc/request/+");
-      // Sending current GPIO status
-//      Serial.println("-d Sending GPIO status");
-//      client.publish("v1/devices/me/attributes", get_gpio_status().c_str());
         get_gpio_status();
-    } else {
-      // Wait 5 seconds before retrying
-      delay(5000);
     }
   }
 }
@@ -456,7 +349,7 @@ void getDistance(String distanceJson){
 void getLED(String ledJson){
   StaticJsonBuffer<200> jsonBuffer;
   JsonObject& ledData = jsonBuffer.parseObject(ledJson);
-  Serial.println("In get led");
+//  Serial.println("In get led");
   if (ledData.success()){
     gpioState[0] = ledData["29"].as<bool>();
     gpioState[1] = ledData["31"].as<bool>();

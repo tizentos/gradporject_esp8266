@@ -4,14 +4,41 @@ var led_31 = false;
 var reloadPeriod = 1000;
 var running = false;
 var ControlGpioData;
+var chart;
+
+var dps = []; // dataPoints
+var xVal = 0;
+var yVal = 100; 
+var updateInterval = 1000;
+var dataLength = 20; // number of dataPoints visible at any point
+
+var updateChart = function (count) {
+
+	count = count || 1;
+
+	// for (var j = 0; j < count; j++) {
+	// 	// yVal = yVal +  Math.round(5 + Math.random() *(-5-5));
+	// 	dps.push({
+	// 		x: xVal,
+	// 		y: yVal
+	// 	});
+	// 	xVal++;
+	// }
+
+	if (dps.length > dataLength) {
+		dps.shift();
+	}
+
+	chart.render();
+};
 
 //Function to handle button color
 function setButtonAppearance(id,value){
   var button =  document.getElementById(id);
   if (id == "led-29"){
-    (Boolean(value))? button.style.backgroundImage = "red":button.style.backgroundImage = "gray";
+    (Boolean(value))? button.style.backgroundColor = "red":button.style.backgroundColor = "gray";
   } else if (id == "led-31"){
-    (Boolean(value))? button.style.backgroundImage = "blue":button.style.backgroundImage = "gray"; 
+    (Boolean(value))? button.style.backgroundColor = "blue":button.style.backgroundColor = "gray"; 
   } else {
     console.log("Can't find LED button");
   }
@@ -24,7 +51,15 @@ function getTelemetry(){
     if (xh.readyState == 4){
       if(xh.status == 200) {
         var res = JSON.parse(xh.responseText);
-        if (res.hasOwnProperty("distance"))distance.add(res.distance);
+        if (res.hasOwnProperty("distance")){
+          // distance.add(res.distance);
+          dps.push({
+            y:res.distance,
+            x: xVal
+          });
+          xVal++;
+          updateChart(dps.length);
+        }
         if (res.hasOwnProperty("29")){
           led_29 = res["29"];
           led_31= res["31"];
@@ -62,22 +97,6 @@ function run(){
 }
 
 function onBodyLoad(){
-  var refreshInput = document.getElementById("refresh-rate");
-  refreshInput.value = reloadPeriod;
-  refreshInput.onchange = function(e){
-    var value = parseInt(e.target.value);
-    reloadPeriod = (value > 0)?value:0;
-    e.target.value = reloadPeriod;
-  }
-  var stopButton = document.getElementById("stop-button");
-  stopButton.onclick = function(e){
-    running = false;
-  }
-  var startButton = document.getElementById("start-button");
-  startButton.onclick = function(e){
-    run();
-  }
-
   //DOM for LED 29
   var led29Button = document.getElementById("led-29");
   led29Button.onclick = function(e){
@@ -106,6 +125,19 @@ function onBodyLoad(){
     ControlGpio();
   }
 
-  distance = createGraph(document.getElementById("distance"), "Distance", 100, 128, 0, 500, false, "cyan");
+   chart = new CanvasJS.Chart("chartContainer", {
+    title :{
+      text: "Proximity Sensor"
+    },
+    axisY: {
+      includeZero: false
+    },      
+    data: [{
+      type: "line",
+      dataPoints: dps
+    }]
+  });
+
+  // distance = createGraph(document.getElementById("distance"), "Distance", 500, 200, 0, 500, false, "cyan");
   run();
 }

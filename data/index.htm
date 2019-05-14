@@ -19,19 +19,38 @@
 <html>
 <head>
   <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <title>BevoThings</title>
   <script type="text/javascript" src="graphs.js"></script>
   <script type="text/javascript" src="app.js"></script>
+  <!-- <link href="https://netdna.bootstrapcdn.com/twitter-bootstrap/2.1.1/css/bootstrap-combined.min.css" rel="stylesheet"> -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 </head>
 <body id="index" style="margin:0; padding:0;" onload="onBodyLoad()">
-  <div id="controls" style="display: block; border: 1px solid rgb(68, 68, 68); padding: 5px; margin: 5px; width: 362px; background-color: rgb(238, 238, 238);">
-    <label>Period (ms):</label>
-    <input type="number" id="refresh-rate"/>
-    <input type="button" id="start-button" value="Start"/>
-    <input type="button" id="stop-button" value="Stop"/>
-    <input type="button" id="led-29" value="Room 1"/>
-    <input type="button" id="led-31" value="Room 2"/>
+  <nav class="navbar navbar-light bg-light">
+        <a class="navbar-brand" href="#">
+          <img src="logo.jpg" width="40" height="30" class="d-inline-block align-top" alt="">
+          BevoThings
+        </a>
+  </nav>
+  <div class="container">
+      <!-- <div class="row justify-content-center" >
+        <div class="col-6 align-self-center" id="distance"></div>
+      </div> -->
+      <div class="row justify-content-center" >
+          <div  class="col-6 align-self-center" id="chartContainer" style="height: 370px; width:100%;"></div>
+     </div>
+     <div class="row justify-content-center">
+        <div class="col-3 " style="margin-top: 10px;" >
+            <div class="btn-group btn-group-lg " role="group">
+              <button type="button" id="led-29" class="btn btn-secondary">Room 1</button>
+              <button type="button" id="led-31" class="btn btn-secondary">Room 2</button>
+            </div>
+        </div>
+     </div>
+
   </div>
-  <div id="distance"></div>
+  <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
 </body>
 </html>
+
